@@ -10,6 +10,8 @@ use Affiliate\Affiliate;
 use app\lib\helpers\Curl;
 use app\lib\api\Controller;
 use Affiliate\Helpers\XMLHelper;
+use app\api\modules\v1\models\Retailer;
+use yii\db\Exception;
 
 class RakutenController extends Controller
 {
@@ -47,10 +49,38 @@ class RakutenController extends Controller
     public $modelClass = "";
 
     /**
+     * Request Delay
+     *
+     * @var int
+     */
+    public $delay = 60;
+
+    /**
+     * Request per minute in calling API
+     *
+     * - Linklocator
+     * @var int
+     */
+    public $requestPerMinute = 5;
+
+    /**
      * Grant Type For API
+     *
      * @var string
      */
     public $type  = 'rakuten';
+
+    /**
+     * Request Link
+     *
+     * @var string
+     */
+    public $link;
+
+    /**
+     * @var string
+     */
+    public $header = [];
 
     /**
      * @var bool
@@ -110,6 +140,26 @@ class RakutenController extends Controller
     }
 
     /**
+     * Get Request Link
+     *
+     * @return mixed
+     */
+    public function getLink()
+    {
+       return $this->link;
+    }
+
+    /**
+     * Get Request Header
+     *
+     * @return string
+     */
+    public function getHeader()
+    {
+        return $this->header;
+    }
+
+    /**
      * Set Access Token For header
      *
      * @param $token
@@ -117,6 +167,26 @@ class RakutenController extends Controller
     public function setToken($token)
     {
         $this->accessToken = $token;
+    }
+
+    /**
+     * Set Request Link To Rakuten
+     *
+     * @param $endpoint
+     */
+    public function setLink($endpoint)
+    {
+        $link = Rakuten::BASE_API_URL.'/'.self::API_NAME.'/'.self::API_VERSION.'/';
+        $this->link = $link.$endpoint;
+    }
+
+    /**
+     * Set Header Request
+     * @param $type
+     */
+    public function setHeader($type)
+    {
+        $this->header[] = 'Authorization: '.$type. ' '. $this->getToken();
     }
 
     /**
@@ -159,14 +229,28 @@ class RakutenController extends Controller
      */
     public function merchantByAppStatus($status)
     {
-        $header[] = 'Authorization: '.self::HEADER_TYPE_BEARER. ' '. $this->getToken();
-        $link  = Rakuten::BASE_API_URL.'/'.self::API_NAME.'/'.self::API_VERSION.'/'.self::MERCHANT_BY_APP_STATUS.'/'.$status;
-        $curl  = new Curl;
+        $this->setHeader(self::HEADER_TYPE_BEARER);
+        $this->setLink(self::MERCHANT_BY_APP_STATUS.'/'.$status);
 
-        $response = $curl->get($link,  '', $header);
+        $data     = [];
+        $curl     = new Curl;
+        $response = $curl->get($this->getLink(),  '', $this->getHeader());
 
-        $xmlElement = new SimpleXMLElement(XMLHelper::tidy($response));
-        pr($xmlElement);
+        $xmlData  = new SimpleXMLElement(XMLHelper::tidy($response));
+
+        $checkResponse = json_decode($xmlData);
+
+        if (isset($checkResponse->fault)) {
+            sleep(ceil($this->delay / $this->requestPerMinute));
+        }
+
+        pr($xmlData);
+//        foreach ($xmlData as $key => $value) {
+//
+//
+//        }
+
+
     }
 
     /**
@@ -179,6 +263,14 @@ class RakutenController extends Controller
      */
     public function merchantById($merchantId)
     {
+        $this->setHeader(self::HEADER_TYPE_BEARER);
+        $this->setLink(self::MERCHANT_BY_ID.'/'.$merchantId);
+
+        $curl     = new Curl;
+        $response = $curl->get($this->getLink(),  '', $this->getHeader());
+
+        $xmlData  = new SimpleXMLElement(XMLHelper::tidy($response));
+
         //@todo Implementation here
 
         return $merchantId;
@@ -193,6 +285,14 @@ class RakutenController extends Controller
      */
     public function merchantByName($name)
     {
+        $this->setHeader(self::HEADER_TYPE_BEARER);
+        $this->setLink(self::MERCHANT_BY_NAME.'/'.$name);
+
+        $curl     = new Curl;
+        $response = $curl->get($this->getLink(),  '', $this->getHeader());
+
+        $xmlData  = new SimpleXMLElement(XMLHelper::tidy($response));
+
         //@todo Implementation here
         return $name;
     }
@@ -209,6 +309,14 @@ class RakutenController extends Controller
      */
     public function merchantByCategory($categoryId)
     {
+        $this->setHeader(self::HEADER_TYPE_BEARER);
+        $this->setLink(self::MERCHANT_BY_CATEGORY.'/'.$categoryId);
+
+        $curl     = new Curl;
+        $response = $curl->get($this->getLink(),  '', $this->getHeader());
+
+        $xmlData  = new SimpleXMLElement(XMLHelper::tidy($response));
+
         //@todo Implementation here
         return $categoryId;
     }
