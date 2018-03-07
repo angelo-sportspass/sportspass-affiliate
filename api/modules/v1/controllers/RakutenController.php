@@ -2,6 +2,8 @@
 
 namespace app\api\modules\v1\controllers;
 
+use app\api\modules\v1\models\Retailer;
+use Carbon\Carbon;
 use yii\base\Module;
 use Affiliate\Affiliate;
 use app\lib\api\Controller;
@@ -69,6 +71,8 @@ class RakutenController extends Controller
         foreach ($data as $key => $value) {
 
             //@todo save retailer data in DB
+
+
             //@todo save offer / commission
 
             //@todo save categories and match
@@ -87,20 +91,37 @@ class RakutenController extends Controller
     /**
      * Get Banners For Merchant
      *
+     *  $merchantId = -1,
+     *  $categoryId = -1,
+     *  $startDate = null,
+     *  $endDate = null,
+     *  $size = -1,
+     *  $campaignId = -1,
+     *  $page = 1
      * @return array
      */
     public function actionMerchantBannerLinks()
     {
-        $data = $this->model->bannerLinks();
+        //@todo get all retailers that are affiliate
+        //@todo loop banners
 
+        /**
+         * Retailer with offer id and affiliate type
+         *
+         * @return object
+         */
+        #$data = Retailer::find()->all();
 
-    }
+        $data = $this->model->bannerLinks(
+            40988,
+            -1,
+            null,
+            null,
+            -1,
+            -1,
+            1
+        );
 
-    /**
-     *
-     */
-    public function actionTest()
-    {
-        pr($this->getToken());
+        pr($data);
     }
 }

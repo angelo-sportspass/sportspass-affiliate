@@ -14,13 +14,13 @@ class AffiliateController extends Controller
      */
     public $modelClass = "";
 
+    /**
+     * Test Purposes
+     * @return \Affiliate\Commission
+     */
     public function actionGenerateModel()
     {
         $model = new Affiliate('rakuten', [
-            'grant_type' => 'password',
-            'username' => 'SportsPass',
-            'password' => 'Turbo100',
-            'scope' => '3222890'
         ]);
 
         return $model->getModel();
