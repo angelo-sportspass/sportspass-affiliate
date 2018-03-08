@@ -10,6 +10,13 @@ use app\lib\api\Controller;
 
 class RakutenController extends Controller
 {
+    const REPORT_TYPE_SUMMARY = 'payment_history_summary';
+    const REPORT_TYPE_HISTORY = 'advertiser_payment_history';
+    const REPORT_TYPE_REPORTS = 'payment_details_report';
+
+    public $merchantFile ='/merchant';
+    public $bannerFile   ='/banners';
+
     /**
      * Set Model For API Active Record
      * @var string
@@ -32,6 +39,12 @@ class RakutenController extends Controller
      * @var $model
      */
     public $model;
+
+    public $report = [
+        self::REPORT_TYPE_SUMMARY => 1,
+        self::REPORT_TYPE_HISTORY => 2,
+        self::REPORT_TYPE_REPORTS => 3
+    ];
 
     /**
      * RakutenController constructor.
@@ -59,6 +72,16 @@ class RakutenController extends Controller
         }
     }
 
+    public function saveResponseMerchant($data)
+    {
+        file_put_contents($_SERVER['DOCUMENT_ROOT'].$this->merchantFile, json_encode($data));
+    }
+
+    public function saveResponseBanner($data)
+    {
+        file_put_contents($_SERVER['DOCUMENT_ROOT'].$this->bannerFile, json_encode($data));
+    }
+
     /**
      * Get All Approved Merchant / Retailer
      *
@@ -67,25 +90,25 @@ class RakutenController extends Controller
     public function actionMerchantByAppStatus()
     {
         $data = $this->model->merchantByAppStatus('approved');
+        pr($this->saveResponseMerchant($data));
+//        foreach ($data as $key => $value) {
+//
+//            //@todo save retailer data in DB
+//
+//
+//            //@todo save offer / commission
+//
+//            //@todo save categories and match
+//            if (isset($value->categories)) {
+//                foreach (explode(' ', $value->categories) as $category) {
+//                    if (is_numeric($category)) {
+//                        //@todo save categories here
+//                    }
+//                }
+//            }
+//        }
 
-        foreach ($data as $key => $value) {
 
-            //@todo save retailer data in DB
-
-
-            //@todo save offer / commission
-
-            //@todo save categories and match
-            if (isset($value->categories)) {
-                foreach (explode(' ', $value->categories) as $category) {
-                    if (is_numeric($category)) {
-                        //@todo save categories here
-                    }
-                }
-            }
-        }
-
-        pr($data);
     }
 
     /**
@@ -122,6 +145,32 @@ class RakutenController extends Controller
             1
         );
 
-        pr($data);
+        $this->saveResponseBanner($data);
     }
+
+    /**
+     * generate reports on transaction
+     * rakuten affiliate network
+     *
+     * @var $startDate
+     * @var $endDate
+     * @var $report
+     *
+     * save in DB production / staging
+     */
+    public function actionReports()
+    {
+        $startDate = date('Y-m-d', strtotime('-2 days'));
+        $endDate   = date('Y-m-d');
+
+        $reports =$this->model->advancedReports(
+            $this->report[self::REPORT_TYPE_SUMMARY],
+            $startDate,
+            $endDate
+        );
+
+        pr($reports);
+    }
+
+
 }
