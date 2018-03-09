@@ -1,4 +1,5 @@
 <?php
+
 namespace app\lib\helpers;
 
 use Exception;
@@ -12,6 +13,9 @@ use yii\helpers\BaseStringHelper;
  */
 class StringHelper extends BaseStringHelper
 {
+    const PERCENT = '%';
+    const DOLLAR  = '$';
+
     /**
      * @param $keywords
      * @return null|string
@@ -125,5 +129,22 @@ class StringHelper extends BaseStringHelper
         }
 
         return $slug;
+    }
+
+    /**
+     * Returns Value with symbol|currency
+     *
+     * @param $string
+     * @return bool|int|string
+     */
+    public static function getValueSymbol($string)
+    {
+        $str = strpos($string, static::PERCENT);
+
+        if (empty($str)) {
+            return static::DOLLAR.$string;
+        }
+
+        return $string;
     }
 }
