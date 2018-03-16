@@ -10,6 +10,7 @@ use Affiliate\Affiliate;
 use app\lib\api\Controller;
 use app\lib\helpers\FileHelper;
 use app\api\modules\v1\models\Retailer;
+use app\api\modules\v1\models\Offer;
 
 class RakutenController extends Controller
 {
@@ -80,13 +81,28 @@ class RakutenController extends Controller
         }
     }
 
-    public function saveResponseFile($data, $name)
+    /**
+     * Get Access Token From A text file
+     * @return mixed|null
+     */
+    public function getRetailers()
     {
-        $file = file_get_contents($data);
+        $retailers = null;
+        if (file_exists($_SERVER['DOCUMENT_ROOT'].'/retailers')) {
+            $retailers = file_get_contents($_SERVER['DOCUMENT_ROOT'].'/retailers');
+        }
 
-        file_put_contents(app()->params['uploadUrl'].'/'.$name, $file);
-        chmod(app()->params['uploadUrl'].'/'.$name, 0775);
+        return $retailers;
+    }
 
+    /**
+     * Save Access Token to a text file
+     *
+     * @param $retailers
+     */
+    public function saveRetailers($retailers)
+    {
+        file_put_contents($_SERVER['DOCUMENT_ROOT'].'/retailers', json_encode($retailers));
     }
 
     /**
@@ -96,65 +112,77 @@ class RakutenController extends Controller
      */
     public function actionMerchantByAppStatus()
     {
-        $data = $this->model->merchantByAppStatus('approved');
+        $retailer = [];
+        $data       = $this->model->merchantByAppStatus('approved');
+        $checkExist = json_decode($this->getRetailers(), true);
 
         foreach ($data as $key => $value) {
 
-            //@todo save retailer data in DB
-            $model = Retailer::findOrCreate($value->id);
+            $retailers = json_decode(json_encode($value));
 
-            if ($model) {
+            if (in_array($retailers->mid, $checkExist)) {
 
-                $model->name = $value->name;
-                $model->affiliate_merchant_id = $value->mid;
-                $model->type = Retailer::RETAILER_TYPE_AFFILIATE;
+                $model = Retailer::findRetailerOrCreate($retailers->mid);
 
-                if ($value->offer) {
+                if ($model) {
 
-                    $offer = new Offer;
-                    $offer->name        = $value->offer->offername;
-                    $offer->commission  = $value->offer->commissionterms;
-                    $offer->affiliate_offer_id  = $value->offer->offerid;
-                    $offer->affiliate_also_name = $value->offer->alsoname;
-                    $offer->save();
+                    $model->name = $retailers->name;
+                    $model->affiliate_merchant_id = $retailers->mid;
+                    $model->type = Retailer::RETAILER_TYPE_AFFILIATE;
 
-                    //@todo save offer / commission
-                    if (isset($value->offer->commissionterms)) {
+                    if ($retailers->offer) {
 
-                        $com       = explode(" ", $value->offer->commissionterms);
-                        $index     = count($com);
+                        $offer = new Offer;
+                        $offer->name        = $retailers->offer->offername;
+                        $offer->commission  = $retailers->offer->commissionterms;
+                        $offer->affiliate_offer_id  = $retailers->offer->offerid;
+                        $offer->affiliate_also_name = $retailers->offer->alsoname;
+                        $offer->save();
 
-                        $commission = StringHelper::getValueSymbol($com[$index - 1]);
+                        if (isset($retailers->offer->commissionterms)) {
 
-                        $model->commission = $commission;
-                    }
-                }
+                            $com       = explode(" ", $retailers->offer->commissionterms);
+                            $index     = count($com);
 
-                $model->status = self::STATUS_ACTIVE;
+                            $commission = StringHelper::getValueSymbol($com[$index - 1]);
 
-                if ($model->save()) {
-
-                    //@todo save categories and match
-                    if (isset($value->categories)) {
-
-                        foreach (explode(' ', $value->categories) as $category) {
-
-                            if (is_numeric($category)) {
-                                //@todo save categories here
-                                $retailerCategory = RetailerCategories::findExist($model->id, $category);
-
-                                if ($retailerCategory) {
-
-                                    $retailerCategory->retailer_id = $model->id;
-                                    $retailerCategory->category_id = $category;
-                                    $retailerCategory->save();
-                                }
-                            }
+                            $model->commission = $commission;
                         }
-                    } // ------ check categories
-                } //----- after save model
-            } //----- if model not empty
-        } //----- loop data response
+                    }
+
+                    $model->status = self::STATUS_ACTIVE;
+                    $model->save();
+
+                    //@todo comment for now to manually add retailer to each
+//                    if ($model->save()) {
+
+                        //@todo save categories and match
+//                        if (isset($retailers->categories)) {
+//
+//                            foreach (explode(' ', $retailers->categories) as $category) {
+//
+//                                if (is_numeric($category)) {
+//                                    //@todo save categories here
+//                                    $retailerCategory = RetailerCategories::findExist($model->id, $category);
+//
+//                                    if ($retailerCategory) {
+//
+//                                        $retailerCategory->retailer_id = $model->id;
+//                                        $retailerCategory->category_id = $category;
+//                                        $retailerCategory->save();
+//                                    }
+//                                }
+//                            }
+//                        } // ------ check categories
+//                    }
+                }
+            }
+
+
+            array_push($retailer, $retailers->mid);
+        }
+
+        $this->saveRetailers($retailer);
     }
 
     /**
@@ -182,7 +210,7 @@ class RakutenController extends Controller
          * @return object
          */
          $data = $this->model->bannerLinks(
-            -1,
+             39612,
             -1,
             null,
             null,
@@ -193,6 +221,7 @@ class RakutenController extends Controller
 
         pr($data);
         foreach ($data as $key => $value) {
+
 
             $fileExt = FileHelper::getFileType($value->iconurl);
             #$this->saveResponseFile($value->iconurl,$value->mid.'_'.$value->linkid.'.'.$fileExt['ext']);

@@ -19,6 +19,8 @@ use app\lib\db\ActiveRecord;
  * @property $is_new_tab
  * @property $is_trending_offers
  * @property $is_trending_experiences
+ * @property $created_at
+ * @property $updated_at
  * @package app\api\modules\v1\models
  */
 class Banner extends ActiveRecord
@@ -43,10 +45,24 @@ class Banner extends ActiveRecord
      */
     public function rules()
     {
-        //@todo define banner current and affiliate fields
         return [
             [[
-                'id',
+                'name',
+                'type',
+                'image',
+                'url',
+                'sort_order',
+                'default_sort_order',
+                'is_default',
+                'is_login',
+                'is_hot_offer',
+                'is_home_page',
+                'is_new_tab',
+                'is_trending_offers',
+                'is_trending_experiences',
+                'status',
+                'created_at',
+                'updated_at'
             ], 'safe']
         ];
     }
@@ -56,10 +72,32 @@ class Banner extends ActiveRecord
      */
     public function attributeLabels()
     {
-        //@todo define banner current and affiliate fields
-
         return [
             'id' => t('ID'),
+            'name' => t('Name'),
+            'type' => t('Image'),
+            'url' => t('Url'),
+            'sort_order' => t('Sort Order'),
+            'is_default' => t('Show Default'),
+            'is_login' => t('Login'),
+            'is_hot_offer' => t('Show Hot Offer'),
+            'is_home_page' => t('Show Home Page'),
+            'is_new_tab' => t('New Tab'),
+            'is_trending_offers' => t('Show Trending Offers'),
+            'is_trending_experiences' => t('Show Trending Experiences'),
+            'link_id' => t('Link ID'),
+            'network_id' => t('Network ID'),
+            'affiliate_merchant_id' => t('Affiliate Merchant ID'),
+            'click_url' => t('Click Url'),
+            'icon_url' => t('Icon Url'),
+            'image_url' => t('Image Url'),
+            'land_url' => t('Land Url'),
+            'start_date' => t('Start Date'),
+            'end_date' => t('End Date'),
+            'configs' => t('Configuration'),
+            'status' => t('Status'),
+            'created_at' => t('Created At'),
+            'updated_at' => t('Updated At')
         ];
     }
 

@@ -4,7 +4,23 @@ namespace app\api\modules\v1\models;
 
 use yii\db\Expression;
 use app\lib\db\ActiveRecord;
+use app\lib\helpers\StringHelper;
+use app\api\modules\v1\models\Settings;
 
+/**
+ * Class Club
+ * @property $name
+ * @property $slug_name
+ * @property $affiliate_id
+ * @property $affiliate_merchant_id
+ * @property $link
+ * @property $type
+ * @property $commission
+ * @property $status
+ * @property $created_at
+ * @property $updated_at
+ * @package app\api\modules\v1\models
+ */
 class Retailer extends ActiveRecord
 {
     const RETAILER_TYPE_AFFILIATE = 'affiliate';
@@ -30,6 +46,14 @@ class Retailer extends ActiveRecord
             [[
                 'name',
                 'description',
+                'affiliate_id',
+                'affiliate_merchant_id',
+                'type',
+                'logo',
+                'link',
+                'slug_name',
+                'commission',
+                'status',
                 'created_at',
                 'updated_at'
             ], 'safe']
@@ -46,6 +70,14 @@ class Retailer extends ActiveRecord
             'id' => t('ID'),
             'name' => t('Name'),
             'description' => t('Description'),
+            'affiliate_id' => t('Affiliate ID'),
+            'affiliate_merchant_id' => t('Affiliate Merchant ID'),
+            'type' => t('Type'),
+            'logo' => t('Logo'),
+            'link' => t('Link'),
+            'slug_name' => t('Slug Name'),
+            'commission' => t('Commission'),
+            'status' => t('status'),
             'created_at' => t('Created At'),
             'updated_at' => t('Updated At')
         ];
@@ -58,6 +90,9 @@ class Retailer extends ActiveRecord
     public function beforeSave($insert)
     {
         if ($this->isNewRecord) {
+
+            $this->slug_name  = StringHelper::createSlug($this->name);
+            $this->link       = Settings::getSettingsValue(Settings::FONTEND_URL) . '/retailer/' . $this->slug_name;
             $this->created_at = new Expression('NOW()');
         }
 
@@ -75,6 +110,18 @@ class Retailer extends ActiveRecord
     public static function findOrCreate($id)
     {
         $obj = static::findOne($id);
+        return $obj ?: new static;
+    }
+
+    /**
+     * @param $mid
+     * @return static
+     */
+    public static function findRetailerOrCreate($mid)
+    {
+        $obj = static::findOne([
+            'affiliate_merchant_id' => $mid
+        ]);
         return $obj ?: new static;
     }
 }
