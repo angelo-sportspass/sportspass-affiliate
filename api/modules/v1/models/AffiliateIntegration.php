@@ -5,26 +5,20 @@ namespace app\api\modules\v1\models;
 use yii\db\Expression;
 use app\lib\db\ActiveRecord;
 
-/**
- * Class Club
- * @property $name
- * @property $commission
- * @property $affiliate_id
- * @property $configs
- * @property $created_at
- * @property $updated_at
- * @package app\api\modules\v1\models
- */
-class Offer extends ActiveRecord
+class AffiliateIntegration extends ActiveRecord
 {
     const REQUEST_METHOD_PUT = 'PUT';
+
+    const RAKUTEN = 1;
+    const COMMISSION_FACTORY = 2;
+    const COMMISSION_JUNCTION = 3;
 
     /**
      * @inheritdoc
      */
     public static function tableName()
     {
-        return '{{%offer}}';
+        return '{{%affiliate}}';
     }
 
     /**
@@ -36,8 +30,8 @@ class Offer extends ActiveRecord
             [['name'],'string' ],
             [[
                 'name',
-                'commission',
-                'affiliate_id',
+                'tracking_link',
+                'tracking_id',
                 'configs',
                 'created_at',
                 'updated_at'
@@ -53,14 +47,18 @@ class Offer extends ActiveRecord
         return [
             'id' => t('ID'),
             'name' => t('Name'),
-            'commission' => t('Commission'),
-            'affiliate_offer_id' => t('Affiliate Offer ID'),
-            'affiliate_also_name' => t('Affiliate Also Name'),
+            'tracking_link' => t('Affiliate Offer ID'),
+            'tracking_id' => t('Affiliate Also Name'),
+            'configs' => t('Configuration'),
             'created_at' => t('Created At'),
             'updated_at' => t('Updated At')
         ];
     }
 
+    /**
+     * @param bool $insert
+     * @return bool
+     */
     public function beforeSave($insert)
     {
         if ($this->isNewRecord) {

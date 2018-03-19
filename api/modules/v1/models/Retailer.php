@@ -122,6 +122,6 @@ class Retailer extends ActiveRecord
         $obj = static::findOne([
             'affiliate_merchant_id' => $mid
         ]);
-        return $obj ?: new static;
+        return $obj ? null : new static;
     }
 }

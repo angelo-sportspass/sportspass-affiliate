@@ -27,6 +27,8 @@ class Category extends ActiveRecord
             [[
                 'name',
                 'sort_order',
+                'parent_id',
+                'affiliate_category_id',
                 'created_at',
                 'updated_at'
             ], 'safe']

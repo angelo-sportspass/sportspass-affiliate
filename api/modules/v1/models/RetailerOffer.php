@@ -2,17 +2,16 @@
 
 namespace app\api\modules\v1\models;
 
-use yii\db\Expression;
 use app\lib\db\ActiveRecord;
 
-class RetailerCategories extends ActiveRecord
+class RetailerOffer extends ActiveRecord
 {
     /**
      * @inheritdoc
      */
     public static function tableName()
     {
-        return '{{%retailer_category}}';
+        return '{{%retailer_offer}}';
     }
 
     /**
@@ -24,7 +23,7 @@ class RetailerCategories extends ActiveRecord
         return [
             [[
                 'retailer_id',
-                'category_id',
+                'offer_id',
             ], 'safe']
         ];
     }
@@ -37,7 +36,7 @@ class RetailerCategories extends ActiveRecord
         //@todo define retailer current and affiliate fields
         return [
             'retailer_id' => t('Retailer Id'),
-            'category_id' => t('Category Id'),
+            'offer_id' => t('Offer Id'),
         ];
     }
 
@@ -51,7 +50,7 @@ class RetailerCategories extends ActiveRecord
     {
         $obj = self::find()
             ->where('retailer_id = :retailer', [':retailer' => $retailer])
-            ->andWhere('category_id = :category', [':category' => $category]);
+            ->andWhere('offer_id = :offer_id', [':offer_id' => $category]);
 
         return $obj ?: new static;
     }

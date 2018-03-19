@@ -19,6 +19,13 @@ use app\lib\db\ActiveRecord;
  * @property $is_new_tab
  * @property $is_trending_offers
  * @property $is_trending_experiences
+ * @property $affiliate_merchant_id
+ * @property $link_id
+ * @property $tracking_url
+ * @property $configs
+ * @property $start_date
+ * @property $end_date
+ * @property $status
  * @property $created_at
  * @property $updated_at
  * @package app\api\modules\v1\models
@@ -60,6 +67,12 @@ class Banner extends ActiveRecord
                 'is_new_tab',
                 'is_trending_offers',
                 'is_trending_experiences',
+                'link_id',
+                'affiliate_merchant_id',
+                'tracking_url',
+                'configs',
+                'start_date',
+                'end_date',
                 'status',
                 'created_at',
                 'updated_at'
@@ -86,12 +99,8 @@ class Banner extends ActiveRecord
             'is_trending_offers' => t('Show Trending Offers'),
             'is_trending_experiences' => t('Show Trending Experiences'),
             'link_id' => t('Link ID'),
-            'network_id' => t('Network ID'),
             'affiliate_merchant_id' => t('Affiliate Merchant ID'),
-            'click_url' => t('Click Url'),
-            'icon_url' => t('Icon Url'),
-            'image_url' => t('Image Url'),
-            'land_url' => t('Land Url'),
+            'tracking_url' => t('Tracking URL'),
             'start_date' => t('Start Date'),
             'end_date' => t('End Date'),
             'configs' => t('Configuration'),
@@ -120,12 +129,15 @@ class Banner extends ActiveRecord
     }
 
     /**
-     * @param $id
+     * @param $link_id
      * @return static
      */
-    public static function findOrCreate($id)
+    public static function findBannerOrCreate($link_id, $merchant_id)
     {
-        $obj = static::findOne($id);
-        return $obj ?: new static;
+        $obj = static::findOne([
+            'link_id' => $link_id,
+            'affiliate_merchant_id' => $merchant_id
+        ]);
+        return $obj ? null : new static;
     }
 }

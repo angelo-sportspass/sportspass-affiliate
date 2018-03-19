@@ -2,6 +2,7 @@
 
 namespace app\api\modules\v1\controllers;
 
+use app\api\modules\v1\models\Banner;
 use app\api\modules\v1\models\RetailerCategories;
 use app\lib\helpers\StringHelper;
 use Carbon\Carbon;
@@ -11,6 +12,7 @@ use app\lib\api\Controller;
 use app\lib\helpers\FileHelper;
 use app\api\modules\v1\models\Retailer;
 use app\api\modules\v1\models\Offer;
+use app\api\modules\v1\models\AffiliateIntegration;
 
 class RakutenController extends Controller
 {
@@ -106,15 +108,32 @@ class RakutenController extends Controller
     }
 
     /**
+     * @param $data
+     * @param $name
+     * @return string
+     */
+    public function saveImageFile($data, $name)
+    {
+        $file = file_get_contents($data);
+
+        file_put_contents(app()->params['uploadUrl'].'/'.$name, $file);
+        chmod(app()->params['uploadUrl'].'/'.$name, 0775);
+
+        return app()->params['uploadUrl'].'/'.$name;
+    }
+
+    /**
      * Get All Approved Merchant / Retailer
      *
      * @desc Save in Active Record.
      */
     public function actionMerchantByAppStatus()
     {
-        $retailer = [];
+        $retailer   = [];
+
         $data       = $this->model->merchantByAppStatus('approved');
-        $checkExist = json_decode($this->getRetailers(), true);
+
+        $checkExist = ($this->getRetailers()) ? json_decode($this->getRetailers(), true) : [];
 
         foreach ($data as $key => $value) {
 
@@ -127,6 +146,7 @@ class RakutenController extends Controller
                 if ($model) {
 
                     $model->name = $retailers->name;
+                    $model->affiliate_id = AffiliateIntegration::RAKUTEN;
                     $model->affiliate_merchant_id = $retailers->mid;
                     $model->type = Retailer::RETAILER_TYPE_AFFILIATE;
 
@@ -135,8 +155,12 @@ class RakutenController extends Controller
                         $offer = new Offer;
                         $offer->name        = $retailers->offer->offername;
                         $offer->commission  = $retailers->offer->commissionterms;
-                        $offer->affiliate_offer_id  = $retailers->offer->offerid;
-                        $offer->affiliate_also_name = $retailers->offer->alsoname;
+                        $offer->affiliate_id  = AffiliateIntegration::RAKUTEN;
+                        $offer->configs       = json_encode([
+                            $retailers->offer->offerid,
+                            $retailers->offer->alsoname
+                        ]);
+
                         $offer->save();
 
                         if (isset($retailers->offer->commissionterms)) {
@@ -152,10 +176,10 @@ class RakutenController extends Controller
 
                     $model->status = self::STATUS_ACTIVE;
                     $model->save();
-
+                    sleep(1);
                     //@todo comment for now to manually add retailer to each
 //                    if ($model->save()) {
-
+                        //@todo use strcmp to match category strings
                         //@todo save categories and match
 //                        if (isset($retailers->categories)) {
 //
@@ -219,15 +243,48 @@ class RakutenController extends Controller
             1
          );
 
-        pr($data);
-        foreach ($data as $key => $value) {
+        if ($data) {
+            foreach ($data as $key => $value) {
 
+                $banners = json_decode(json_encode($value));
+                $model   = Banner::findBannerOrCreate($banners->linkid, $banners->mid);
 
-            $fileExt = FileHelper::getFileType($value->iconurl);
-            #$this->saveResponseFile($value->iconurl,$value->mid.'_'.$value->linkid.'.'.$fileExt['ext']);
+                if ($model) {
 
+                    $fileExt = ($banners->iconurl) ? FileHelper::getFileType($banners->iconurl) : null;
+                    $icon    = ($banners->iconurl) ? $this->saveImageFile($banners->iconurl,$banners->mid.'_'.$banners->linkid.'.'.$fileExt['ext']) : null;
 
+                    $model->type = $banners->linkname;
+                    $model->image = $icon;
+                    $model->affiliate_merchant_id = $banners->mid;
+                    $model->link_id = $banners->linkid;
+                    $model->url = filter_var($banners->landurl, FILTER_VALIDATE_URL) ? $banners->landurl : null;
+                    $model->tracking_url = $banners->clickurl;
+                    $model->start_date = $banners->startdate;
+                    $model->end_date = $banners->enddate;
+
+                    $configs = [
+                        'link_id' => $banners->linkid,
+                        'link_name' => $banners->linkname,
+                        'network_id' => $banners->nid,
+                        'click_url' => $banners->clickurl,
+                        'icon_url' => $banners->iconurl,
+                        'image_url' => $banners->imgurl,
+                        'land_url' => $banners->landurl,
+                        'height' => $banners->height,
+                        'width' => $banners->width,
+                        'size' => $banners->size,
+                        'server_type' => $banners->servertype
+                    ];
+
+                    $model->configs = json_encode($configs);
+
+                    $model->save();
+                    sleep(1);
+                }
+            }
         }
+
     }
 
     /**
