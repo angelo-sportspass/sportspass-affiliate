@@ -4,6 +4,7 @@ namespace app\api\modules\v1\controllers;
 
 use app\api\modules\v1\models\Banner;
 use app\api\modules\v1\models\RetailerCategories;
+use app\api\modules\v1\models\RetailerOffer;
 use app\lib\helpers\StringHelper;
 use Carbon\Carbon;
 use yii\base\Module;
@@ -13,6 +14,7 @@ use app\lib\helpers\FileHelper;
 use app\api\modules\v1\models\Retailer;
 use app\api\modules\v1\models\Offer;
 use app\api\modules\v1\models\AffiliateIntegration;
+use app\api\modules\v1\models\RetailerBanners;
 
 class RakutenController extends Controller
 {
@@ -98,6 +100,29 @@ class RakutenController extends Controller
     }
 
     /**
+     * Get Access Token From A text file
+     * @return mixed|null
+     */
+    public function getBannerRetailers()
+    {
+        $retailers = null;
+        if (file_exists($_SERVER['DOCUMENT_ROOT'].'/banners-retailers')) {
+            $retailers = file_get_contents($_SERVER['DOCUMENT_ROOT'].'/banners-retailers');
+        }
+
+        return $retailers;
+    }
+
+    /**
+     * empty file for cron checking when running endpoint..
+     * @return file.txt
+     */
+    public function emptyFileCheck()
+    {
+        file_put_contents($_SERVER['DOCUMENT_ROOT'].'/test', '');
+    }
+
+    /**
      * Save Access Token to a text file
      *
      * @param $retailers
@@ -105,6 +130,16 @@ class RakutenController extends Controller
     public function saveRetailers($retailers)
     {
         file_put_contents($_SERVER['DOCUMENT_ROOT'].'/retailers', json_encode($retailers));
+    }
+
+    /**
+     * Save Access Token to a text file
+     *
+     * @param $retailers
+     */
+    public function saveBannerRetailers($retailers)
+    {
+        file_put_contents($_SERVER['DOCUMENT_ROOT'].'/banners-retailers', json_encode($retailers));
     }
 
     /**
@@ -130,16 +165,15 @@ class RakutenController extends Controller
     public function actionMerchantByAppStatus()
     {
         $retailer   = [];
-
         $data       = $this->model->merchantByAppStatus('approved');
 
-        $checkExist = ($this->getRetailers()) ? json_decode($this->getRetailers(), true) : [];
+        $checkExist = ($this->getRetailers()) ? json_decode($this->getRetailers(), true) : null;
 
         foreach ($data as $key => $value) {
 
             $retailers = json_decode(json_encode($value));
 
-            if (in_array($retailers->mid, $checkExist)) {
+            if (!in_array($retailers->mid, ($checkExist) ? $checkExist : [])) {
 
                 $model = Retailer::findRetailerOrCreate($retailers->mid);
 
@@ -175,7 +209,18 @@ class RakutenController extends Controller
                     }
 
                     $model->status = self::STATUS_ACTIVE;
-                    $model->save();
+                    if ($model->save()) {
+
+                        $retOffer = RetailerOffer::findExist($model->id, $offer->id);
+
+                        if ($retOffer) {
+                            $retOffer->retailer_id = $model->id;
+                            $retOffer->offer_id = $offer->id;
+
+                            $retOffer->save();
+                        }
+
+                    }
                     sleep(1);
                     //@todo comment for now to manually add retailer to each
 //                    if ($model->save()) {
@@ -199,14 +244,22 @@ class RakutenController extends Controller
 //                            }
 //                        } // ------ check categories
 //                    }
-                }
-            }
 
+                }
+            } else {
+
+                pr($retailers->mid,0);
+                /**
+                 * continue looping to merchant data
+                 */
+                continue;
+            }
 
             array_push($retailer, $retailers->mid);
         }
 
-        $this->saveRetailers($retailer);
+        $this->emptyFileCheck();
+        if (!empty($retailer)) $this->saveRetailers($retailer);
     }
 
     /**
@@ -223,68 +276,96 @@ class RakutenController extends Controller
      */
     public function actionMerchantBannerLinks()
     {
-
         //@todo loop banners
 
         //@todo save banner_retailer [match affiliate_merchant_id to retailer]
+        $retailers = ($this->getBannerRetailers()) ? json_decode($this->getBannerRetailers(), true) : [];
+        $merchant  = Retailer::findAll(['type' => Retailer::RETAILER_TYPE_AFFILIATE]);
 
-        /**
-         * Retailer with offer id and affiliate type
-         *
-         * @return object
-         */
-         $data = $this->model->bannerLinks(
-             39612,
-            -1,
-            null,
-            null,
-            -1,
-            -1,
-            1
-         );
+        $checkExist = ($this->getBannerRetailers()) ? json_decode($this->getBannerRetailers(), true) : null;
 
-        if ($data) {
-            foreach ($data as $key => $value) {
+        if ($merchant) {
+            foreach ($merchant as $k => $v) {
 
-                $banners = json_decode(json_encode($value));
-                $model   = Banner::findBannerOrCreate($banners->linkid, $banners->mid);
+                if (!in_array($v->affiliate_merchant_id, ($checkExist) ? $checkExist : [])) {
 
-                if ($model) {
+                    /**
+                     * Retailer with offer id and affiliate type
+                     *
+                     * @return object
+                     */
+                    $data = $this->model->bannerLinks(
+                        $v->affiliate_merchant_id,
+                        -1,
+                        null,
+                        null,
+                        -1,
+                        -1,
+                        1
+                    );
 
-                    $fileExt = ($banners->iconurl) ? FileHelper::getFileType($banners->iconurl) : null;
-                    $icon    = ($banners->iconurl) ? $this->saveImageFile($banners->iconurl,$banners->mid.'_'.$banners->linkid.'.'.$fileExt['ext']) : null;
+                    if ($data) {
+                        foreach ($data as $key => $value) {
 
-                    $model->type = $banners->linkname;
-                    $model->image = $icon;
-                    $model->affiliate_merchant_id = $banners->mid;
-                    $model->link_id = $banners->linkid;
-                    $model->url = filter_var($banners->landurl, FILTER_VALIDATE_URL) ? $banners->landurl : null;
-                    $model->tracking_url = $banners->clickurl;
-                    $model->start_date = $banners->startdate;
-                    $model->end_date = $banners->enddate;
+                            $banners = json_decode(json_encode($value));
+                            $model = Banner::findBannerOrCreate($banners->linkid, $banners->mid);
 
-                    $configs = [
-                        'link_id' => $banners->linkid,
-                        'link_name' => $banners->linkname,
-                        'network_id' => $banners->nid,
-                        'click_url' => $banners->clickurl,
-                        'icon_url' => $banners->iconurl,
-                        'image_url' => $banners->imgurl,
-                        'land_url' => $banners->landurl,
-                        'height' => $banners->height,
-                        'width' => $banners->width,
-                        'size' => $banners->size,
-                        'server_type' => $banners->servertype
-                    ];
+                            if ($model) {
 
-                    $model->configs = json_encode($configs);
+                                $fileExt = ($banners->iconurl) ? FileHelper::getFileType($banners->iconurl) : null;
+                                $icon = ($banners->iconurl) ? $this->saveImageFile($banners->iconurl, $banners->mid . '_' . $banners->linkid . '.' . $fileExt['ext']) : null;
 
-                    $model->save();
+                                $model->type = $banners->linkname;
+                                $model->image = $icon;
+                                $model->affiliate_merchant_id = $banners->mid;
+                                $model->link_id = $banners->linkid;
+                                $model->url = filter_var($banners->landurl, FILTER_VALIDATE_URL) ? $banners->landurl : null;
+                                $model->tracking_url = $banners->clickurl;
+                                $model->start_date = $banners->startdate;
+                                $model->end_date = $banners->enddate;
+
+                                $configs = [
+                                    'link_id' => $banners->linkid,
+                                    'link_name' => $banners->linkname,
+                                    'network_id' => $banners->nid,
+                                    'click_url' => $banners->clickurl,
+                                    'icon_url' => $banners->iconurl,
+                                    'image_url' => $banners->imgurl,
+                                    'land_url' => $banners->landurl,
+                                    'height' => $banners->height,
+                                    'width' => $banners->width,
+                                    'size' => $banners->size,
+                                    'server_type' => $banners->servertype
+                                ];
+
+                                $model->configs = json_encode($configs);
+
+                                if ($model->save()) {
+
+                                    $retBanners = RetailerBanners::findExist($banners->mid, $model->id);
+
+                                    if ($retBanners) {
+
+                                        $retBanners->retailer_id = Retailer::getRetailerIdByAffiliateMerchantId($banners->mid);
+                                        $retBanners->banner_id = $model->id;
+
+                                        $retBanners->save();
+                                    }
+                                }
+
+                                sleep(1);
+                            }
+                        }
+
+                        array_push($retailers, $v->affiliate_merchant_id);
+                        if (!empty($retailers)) $this->saveBannerRetailers($retailers);
+                        break;
+                    }
+
                     sleep(1);
                 }
             }
         }
-
     }
 
     /**

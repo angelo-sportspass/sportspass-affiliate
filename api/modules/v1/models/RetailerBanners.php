@@ -42,16 +42,17 @@ class RetailerBanners extends ActiveRecord
 
     /**
      * @param $retailer
-     * @param $category
+     * @param $banner
      *
      * @return object
      */
-    public static function findExist($retailer, $category)
+    public static function findExist($retailer, $banner)
     {
-        $obj = self::find()
-            ->where('retailer_id = :retailer', [':retailer' => $retailer])
-            ->andWhere('banner_id = :banner_id', [':banner_id' => $category]);
+        $obj = self::findOne([
+           'retailer_id' => $retailer,
+           'banner_id' => $banner
+        ]);
 
-        return $obj ?: new static;
+        return $obj ? null : new static;
     }
 }

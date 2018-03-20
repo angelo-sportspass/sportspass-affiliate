@@ -9,6 +9,7 @@ use app\api\modules\v1\models\Settings;
 
 /**
  * Class Club
+ * @property $id
  * @property $name
  * @property $slug_name
  * @property $affiliate_id
@@ -123,5 +124,30 @@ class Retailer extends ActiveRecord
             'affiliate_merchant_id' => $mid
         ]);
         return $obj ? null : new static;
+    }
+
+    /**
+     * @param $affiliate_merchant_id
+     *
+     * @return $id
+     */
+    public static function getRetailerIdByAffiliateMerchantId($affiliate_merchant_id)
+    {
+        $obj = static::findOne([
+            'affiliate_merchant_id' => $affiliate_merchant_id
+        ]);
+
+        return $obj->id;
+    }
+
+    /**
+     * @param $id
+     * @return mixed
+     */
+    public static function getRetailerAffiliateMerchantIdById($id)
+    {
+        $obj = static::findOne($id);
+
+        return $obj->affiliate_merchant_id;
     }
 }

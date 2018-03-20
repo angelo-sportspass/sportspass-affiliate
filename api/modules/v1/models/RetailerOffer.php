@@ -42,16 +42,17 @@ class RetailerOffer extends ActiveRecord
 
     /**
      * @param $retailer
-     * @param $category
+     * @param $offer
      *
      * @return object
      */
-    public static function findExist($retailer, $category)
+    public static function findExist($retailer, $offer)
     {
-        $obj = self::find()
-            ->where('retailer_id = :retailer', [':retailer' => $retailer])
-            ->andWhere('offer_id = :offer_id', [':offer_id' => $category]);
+        $obj = self::findOne([
+            'retailer_id' => $retailer,
+            'offer_id' => $offer
+        ]);
 
-        return $obj ?: new static;
+        return $obj ? null : new static;
     }
 }

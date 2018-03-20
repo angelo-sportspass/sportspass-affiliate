@@ -13,7 +13,7 @@ class m180319_013344_create_retailer_banners_table extends Migration
     public function up()
     {
         $this->createTable('retailer_banners', [
-            'retail_id' => $this->integer(),
+            'retailer_id' => $this->integer(),
             'banner_id' => $this->integer()
         ]);
     }
