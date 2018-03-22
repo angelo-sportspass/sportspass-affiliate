@@ -150,4 +150,17 @@ class Retailer extends ActiveRecord
 
         return $obj->affiliate_merchant_id;
     }
+
+    /**
+     * @param $affiliate_merchant_id
+     * @return mixed
+     */
+    public static function getRetailerSlugName($affiliate_merchant_id)
+    {
+        $obj = static::findOne([
+            'affiliate_merchant_id' => $affiliate_merchant_id
+        ]);
+
+        return $obj->slug_name;
+    }
 }

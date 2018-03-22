@@ -2,19 +2,17 @@
 
 namespace app\api\modules\v1\controllers;
 
-use app\api\modules\v1\models\Banner;
-use app\api\modules\v1\models\RetailerCategories;
-use app\api\modules\v1\models\RetailerOffer;
-use app\lib\helpers\StringHelper;
-use Carbon\Carbon;
 use yii\base\Module;
 use Affiliate\Affiliate;
 use app\lib\api\Controller;
 use app\lib\helpers\FileHelper;
-use app\api\modules\v1\models\Retailer;
+use app\lib\helpers\StringHelper;
 use app\api\modules\v1\models\Offer;
-use app\api\modules\v1\models\AffiliateIntegration;
+use app\api\modules\v1\models\Banner;
+use app\api\modules\v1\models\Retailer;
+use app\api\modules\v1\models\RetailerOffer;
 use app\api\modules\v1\models\RetailerBanners;
+use app\api\modules\v1\models\AffiliateIntegration;
 
 class RakutenController extends Controller
 {
@@ -26,6 +24,13 @@ class RakutenController extends Controller
 
     const STATUS_ACTIVE = 1;
     const STATUS_INACTIVE = 0;
+
+    const BANNER_CATEGORY_DEFAULT = -1;
+    const BANNER_START_DATE_DEFAULT = '01012018';
+    const BANNER_END_DATE_DEFAULT = '12312018';
+    const BANNER_SIZE_DEFAULT = -1;
+    const BANNER_CAMPAIGN_ID_DEFAULT = -1;
+    const BANNER_PAGE_DEFAULT = 1;
 
     public $merchantFile ='/merchant';
     public $bannerFile   ='/banners';
@@ -119,7 +124,25 @@ class RakutenController extends Controller
      */
     public function emptyFileCheck()
     {
-        file_put_contents($_SERVER['DOCUMENT_ROOT'].'/test', '');
+        file_put_contents($_SERVER['DOCUMENT_ROOT'].'/check-banner', '');
+    }
+
+    /**
+     * empty file for cron checking when running endpoint..
+     * @return file.txt
+     */
+    public function emptyRetailerCheck()
+    {
+        file_put_contents($_SERVER['DOCUMENT_ROOT'].'/retailers', '[]');
+    }
+
+    /**
+     * empty file for cron checking when running endpoint..
+     * @return file.txt
+     */
+    public function emptyBannerRetailerCheck()
+    {
+        file_put_contents($_SERVER['DOCUMENT_ROOT'].'/banners-retailers', '[]');
     }
 
     /**
@@ -276,6 +299,16 @@ class RakutenController extends Controller
      */
     public function actionMerchantBannerLinks()
     {
+        $s3     = app()->get('s3');
+        $month  = date('m', time());
+        $day    = date('d', time());
+        $year   = date('Y', time());
+//
+//        $link = $s3->upload('Staging/banners/test-name/38012_201.png', $local);
+//        pr($link['ObjectURL'],0);
+//
+//        pr(unlink($local));
+
         //@todo loop banners
 
         //@todo save banner_retailer [match affiliate_merchant_id to retailer]
@@ -296,12 +329,12 @@ class RakutenController extends Controller
                      */
                     $data = $this->model->bannerLinks(
                         $v->affiliate_merchant_id,
-                        -1,
-                        null,
-                        null,
-                        -1,
-                        -1,
-                        1
+                        self::BANNER_CATEGORY_DEFAULT,
+                        self::BANNER_START_DATE_DEFAULT,
+                        self::BANNER_END_DATE_DEFAULT,
+                        self::BANNER_SIZE_DEFAULT,
+                        self::BANNER_CAMPAIGN_ID_DEFAULT,
+                        self::BANNER_PAGE_DEFAULT
                     );
 
                     if ($data) {
@@ -313,16 +346,32 @@ class RakutenController extends Controller
                             if ($model) {
 
                                 $fileExt = ($banners->iconurl) ? FileHelper::getFileType($banners->iconurl) : null;
-                                $icon = ($banners->iconurl) ? $this->saveImageFile($banners->iconurl, $banners->mid . '_' . $banners->linkid . '.' . $fileExt['ext']) : null;
+                                $icon    = ($banners->iconurl) ? $this->saveImageFile($banners->iconurl, $banners->mid . '_' . $banners->linkid . '.' . $fileExt['ext']) : null;
+
+                                /**
+                                 * Upload Banner Image to S3
+                                 * Bucket Sportspass
+                                 * @return Object
+                                 */
+                                $s3Link = $s3->upload('Staging/banners/'.Retailer::getRetailerSlugName($banners->mid).'/'.$banners->mid . '_' . $banners->linkid . '.' . $fileExt['ext'], $icon);
+
+                                /**
+                                 * Remove Banner in local file
+                                 * @remove image
+                                 */
+                                unlink($icon);
+
+                                $start = date('Y-m-d', strtotime($banners->startdate));
+                                $end   = date('Y-m-d', strtotime($banners->enddate));
 
                                 $model->type = $banners->linkname;
-                                $model->image = $icon;
+                                $model->image = $s3Link['ObjectURL'];
                                 $model->affiliate_merchant_id = $banners->mid;
                                 $model->link_id = $banners->linkid;
                                 $model->url = filter_var($banners->landurl, FILTER_VALIDATE_URL) ? $banners->landurl : null;
                                 $model->tracking_url = $banners->clickurl;
-                                $model->start_date = $banners->startdate;
-                                $model->end_date = $banners->enddate;
+                                $model->start_date = $start;
+                                $model->end_date = $end;
 
                                 $configs = [
                                     'link_id' => $banners->linkid,
@@ -358,6 +407,7 @@ class RakutenController extends Controller
                         }
 
                         array_push($retailers, $v->affiliate_merchant_id);
+                        $this->emptyFileCheck();
                         if (!empty($retailers)) $this->saveBannerRetailers($retailers);
                         break;
                     }
@@ -392,4 +442,12 @@ class RakutenController extends Controller
         pr($reports);
     }
 
+    /**
+     * remove checking in textfile
+     */
+    public function actionRemoveChecking()
+    {
+        $this->emptyRetailerCheck();
+        $this->emptyBannerRetailerCheck();
+    }
 }

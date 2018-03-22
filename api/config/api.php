@@ -32,6 +32,17 @@ $config = [
             'charset' => 'UTF-8',
         ],
 
+        's3' => [
+            'class' => 'frostealth\yii2\aws\s3\Service',
+            'credentials' => [ // Aws\Credentials\CredentialsInterface|array|callable
+                'key' => 'AKIAIQUIKU546XV347AA',
+                'secret' => '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',
+            ],
+            'region' => 'ap-southeast-2',
+            'defaultBucket' => 'sportspass',
+            'defaultAcl' => 'public-read',
+        ],
+
         'request' => [
             // Set Parser to JsonParser to accept Json in request
             'class' => '\yii\web\Request',
