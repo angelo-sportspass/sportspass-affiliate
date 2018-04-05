@@ -26,8 +26,8 @@ class RakutenController extends Controller
     const STATUS_INACTIVE = 0;
 
     const BANNER_CATEGORY_DEFAULT = -1;
-    const BANNER_START_DATE_DEFAULT = '01012018';
-    const BANNER_END_DATE_DEFAULT = '12312018';
+    const BANNER_START_DATE_DEFAULT = '01012016';
+    const BANNER_END_DATE_DEFAULT = null;
     const BANNER_SIZE_DEFAULT = -1;
     const BANNER_CAMPAIGN_ID_DEFAULT = -1;
     const BANNER_PAGE_DEFAULT = 1;
