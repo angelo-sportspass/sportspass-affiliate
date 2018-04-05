@@ -4,10 +4,10 @@
 # change path to application <path>/<to>/<app>/check-banner
 # change domain
 
-if [ -s ~/Sites/sportspass-affiliate/api/check-banner ]
+if [ -s /var/www/sportspass-affiliate/api/check-banner ]
 then
     echo 'true';
 else
-   echo "true" >> ~/Sites/sportspass-affiliate/api/check-banner;
-   curl -s 'sportspass-affiliate.dev.local/v1/rakuten/merchant-banner-links';
+   echo "true" >> /var/www/sportspass-affiliate/api/check-banner;
+   curl -s 'affiliate.sportsnomads.com.au/v1/rakuten/merchant-banner-links';
 fi
