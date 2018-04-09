@@ -32,6 +32,8 @@ class RakutenController extends Controller
     const BANNER_CAMPAIGN_ID_DEFAULT = -1;
     const BANNER_PAGE_DEFAULT = 1;
 
+    const MERCHANT_CROCS = 38922;
+
     public $merchantFile ='/merchant';
     public $bannerFile   ='/banners';
 
@@ -345,64 +347,67 @@ class RakutenController extends Controller
 
                             if ($model) {
 
-                                $fileExt = ($banners->iconurl) ? FileHelper::getFileType($banners->iconurl) : null;
-                                $icon    = ($banners->iconurl) ? $this->saveImageFile($banners->iconurl, $banners->mid . '_' . $banners->linkid . '.' . $fileExt['ext']) : null;
+                                if ($banners->mid != self::MERCHANT_CROCS)
+                                {
+                                    $fileExt = ($banners->iconurl) ? FileHelper::getFileType($banners->iconurl) : null;
+                                    $icon    = ($banners->iconurl) ? $this->saveImageFile($banners->iconurl, $banners->mid . '_' . $banners->linkid . '.' . $fileExt['ext']) : null;
 
-                                /**
-                                 * Upload Banner Image to S3
-                                 * Bucket Sportspass
-                                 * @return Object
-                                 */
-                                $s3Link = $s3->upload('Staging/banners/'.Retailer::getRetailerSlugName($banners->mid).'/'.$banners->mid . '_' . $banners->linkid . '.' . $fileExt['ext'], $icon);
+                                    /**
+                                     * Upload Banner Image to S3
+                                     * Bucket Sportspass
+                                     * @return Object
+                                     */
+                                    $s3Link = $s3->upload('Staging/banners/'.Retailer::getRetailerSlugName($banners->mid).'/'.$banners->mid . '_' . $banners->linkid . '.' . $fileExt['ext'], $icon);
 
-                                /**
-                                 * Remove Banner in local file
-                                 * @remove image
-                                 */
-                                unlink($icon);
+                                    /**
+                                     * Remove Banner in local file
+                                     * @remove image
+                                     */
+                                    unlink($icon);
 
-                                $start = date('Y-m-d', strtotime($banners->startdate));
-                                $end   = date('Y-m-d', strtotime($banners->enddate));
+                                    $start = date('Y-m-d', strtotime($banners->startdate));
+                                    $end   = date('Y-m-d', strtotime($banners->enddate));
 
-                                $model->type = $banners->linkname;
-                                $model->image = $s3Link['ObjectURL'];
-                                $model->affiliate_merchant_id = $banners->mid;
-                                $model->link_id = $banners->linkid;
-                                $model->url = filter_var($banners->landurl, FILTER_VALIDATE_URL) ? $banners->landurl : null;
-                                $model->tracking_url = $banners->clickurl;
-                                $model->start_date = $start;
-                                $model->end_date = $end;
+                                    $model->type = $banners->linkname;
+                                    $model->image = $s3Link['ObjectURL'];
+                                    $model->affiliate_merchant_id = $banners->mid;
+                                    $model->link_id = $banners->linkid;
+                                    $model->url = filter_var($banners->landurl, FILTER_VALIDATE_URL) ? $banners->landurl : null;
+                                    $model->tracking_url = $banners->clickurl;
+                                    $model->start_date = $start;
+                                    $model->end_date = $end;
 
-                                $configs = [
-                                    'link_id' => $banners->linkid,
-                                    'link_name' => $banners->linkname,
-                                    'network_id' => $banners->nid,
-                                    'click_url' => $banners->clickurl,
-                                    'icon_url' => $banners->iconurl,
-                                    'image_url' => $banners->imgurl,
-                                    'land_url' => $banners->landurl,
-                                    'height' => $banners->height,
-                                    'width' => $banners->width,
-                                    'size' => $banners->size,
-                                    'server_type' => $banners->servertype
-                                ];
+                                    $configs = [
+                                        'link_id' => $banners->linkid,
+                                        'link_name' => $banners->linkname,
+                                        'network_id' => $banners->nid,
+                                        'click_url' => $banners->clickurl,
+                                        'icon_url' => $banners->iconurl,
+                                        'image_url' => $banners->imgurl,
+                                        'land_url' => $banners->landurl,
+                                        'height' => $banners->height,
+                                        'width' => $banners->width,
+                                        'size' => $banners->size,
+                                        'server_type' => $banners->servertype
+                                    ];
 
-                                $model->configs = json_encode($configs);
+                                    $model->configs = json_encode($configs);
 
-                                if ($model->save()) {
+                                    if ($model->save()) {
 
-                                    $retBanners = RetailerBanners::findExist($banners->mid, $model->id);
+                                        $retBanners = RetailerBanners::findExist($banners->mid, $model->id);
 
-                                    if ($retBanners) {
+                                        if ($retBanners) {
 
-                                        $retBanners->retailer_id = Retailer::getRetailerIdByAffiliateMerchantId($banners->mid);
-                                        $retBanners->banner_id = $model->id;
+                                            $retBanners->retailer_id = Retailer::getRetailerIdByAffiliateMerchantId($banners->mid);
+                                            $retBanners->banner_id = $model->id;
 
-                                        $retBanners->save();
+                                            $retBanners->save();
+                                        }
                                     }
-                                }
 
-                                sleep(1);
+                                    sleep(1);
+                                }
                             }
                         }
 
