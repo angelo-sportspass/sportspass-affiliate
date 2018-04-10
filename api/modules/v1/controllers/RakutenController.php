@@ -363,19 +363,20 @@ class RakutenController extends Controller
                                      * Bucket Sportspass
                                      * @return Object
                                      */
-                                    $s3Link = $s3->upload('Staging/banners/'.Retailer::getRetailerSlugName($banners->mid).'/'.$banners->mid . '_' . $banners->linkid . '.' . $fileExt['ext'], $icon);
+                                    $s3Link = ($icon) ? $s3->upload('Staging/banners/'.Retailer::getRetailerSlugName($banners->mid).'/'.$banners->mid . '_' . $banners->linkid . '.' . $fileExt['ext'], $icon) : null;
 
                                     /**
                                      * Remove Banner in local file
                                      * @remove image
                                      */
+                                    if ($icon)
                                     unlink($icon);
 
                                     $start = date('Y-m-d', strtotime($banners->startdate));
                                     $end   = date('Y-m-d', strtotime($banners->enddate));
 
                                     $model->type = $banners->linkname;
-                                    $model->image = $s3Link['ObjectURL'];
+                                    $model->image = ($s3Link) ? $s3Link['ObjectURL'] : null;
                                     $model->affiliate_merchant_id = $banners->mid;
                                     $model->link_id = $banners->linkid;
                                     $model->url = filter_var($banners->landurl, FILTER_VALIDATE_URL) ? $banners->landurl : null;
