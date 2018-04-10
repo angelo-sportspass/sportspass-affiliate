@@ -174,12 +174,18 @@ class RakutenController extends Controller
      */
     public function saveImageFile($data, $name)
     {
-        $file = file_get_contents($data);
+        $image_url = null;
 
-        file_put_contents(app()->params['uploadUrl'].'/'.$name, $file);
-        chmod(app()->params['uploadUrl'].'/'.$name, 0775);
+        if (@$file = file_get_contents($data))
+        {
+            file_put_contents(app()->params['uploadUrl'].'/'.$name, $file);
+            chmod(app()->params['uploadUrl'].'/'.$name, 0775);
 
-        return app()->params['uploadUrl'].'/'.$name;
+            $image_url = app()->params['uploadUrl'].'/'.$name;
+
+        }
+
+        return $image_url;
     }
 
     /**
