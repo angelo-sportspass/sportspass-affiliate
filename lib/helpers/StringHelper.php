@@ -128,7 +128,7 @@ class StringHelper extends BaseStringHelper
             $slug .= $slug_text[$i].$delimeter;
         }
 
-        return $slug;
+        return preg_replace('/[^ \w-]/', '', $slug);
     }
 
     /**
