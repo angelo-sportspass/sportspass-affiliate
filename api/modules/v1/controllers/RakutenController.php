@@ -239,9 +239,9 @@ class RakutenController extends Controller
                         }
                     }
 
-                    $model->status = self::STATUS_ACTIVE;
+//                    $model->status = self::STATUS_ACTIVE;
                     if ($model->save()) {
-
+//
                         $retOffer = RetailerOffer::findExist($model->id, $offer->id);
 
                         if ($retOffer) {
