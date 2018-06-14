@@ -8,6 +8,7 @@ return [
     'controller'  => [
         'v1/affiliate',
         'v1/rakuten',
+        'v1/hot-deals'
     ],
     'pluralize' => false,
     'extraPatterns' => [
