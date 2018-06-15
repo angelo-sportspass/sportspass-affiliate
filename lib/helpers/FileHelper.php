@@ -87,6 +87,22 @@ class FileHelper extends BaseFileHelper
     }
 
     /**
+     * @param int $length
+     * @return string
+     */
+    public static function generateFileName($length = 10)
+    {
+        $key = '';
+        $keys = array_merge(range(0, 9), range('a', 'z'));
+
+        for ($i = 0; $i < $length; $i++) {
+            $key .= $keys[array_rand($keys)];
+        }
+
+        return $key;
+    }
+
+    /**
      * Convert bytes into human readable size
      * @param $bytes
      * @param int $decimals

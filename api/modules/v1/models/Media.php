@@ -2,19 +2,19 @@
 
 namespace app\api\modules\v1\models;
 
-use app\lib\db\ActiveRecord;
 use yii\db\Expression;
+use app\lib\db\ActiveRecord;
 
-class Category extends ActiveRecord
+class Media extends ActiveRecord
 {
     const REQUEST_METHOD_PUT = 'PUT';
-    const CATEGORY_EXPERIENCES = 2;
+
     /**
      * @inheritdoc
      */
     public static function tableName()
     {
-        return '{{%category}}';
+        return '{{%media}}';
     }
 
     /**
@@ -23,12 +23,8 @@ class Category extends ActiveRecord
     public function rules()
     {
         return [
-            [['name'],'string' ],
             [[
-                'name',
-                'sort_order',
-                'parent_id',
-                'affiliate_category_id',
+                'link',
                 'created_at',
                 'updated_at'
             ], 'safe']
@@ -42,13 +38,17 @@ class Category extends ActiveRecord
     {
         return [
             'id' => t('ID'),
-            'name' => t('Name'),
-            'sort_order' => t('Sort Order'),
+            'link' => t('Name'),
             'created_at' => t('Created At'),
             'updated_at' => t('Updated At')
         ];
     }
 
+    /**
+     * @param bool $insert
+     * @return bool
+     * @throws \yii\web\HttpException
+     */
     public function beforeSave($insert)
     {
         if ($this->isNewRecord) {

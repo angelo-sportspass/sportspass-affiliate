@@ -58,6 +58,7 @@ class Banner extends ActiveRecord
                 'type',
                 'image',
                 'url',
+                'experience_id',
                 'sort_order',
                 'default_sort_order',
                 'is_default',
@@ -90,6 +91,7 @@ class Banner extends ActiveRecord
             'name' => t('Name'),
             'type' => t('Image'),
             'url' => t('Url'),
+            'experience_id' => t('Experience Oz ID'),
             'sort_order' => t('Sort Order'),
             'is_default' => t('Show Default'),
             'is_login' => t('Login'),
@@ -130,13 +132,25 @@ class Banner extends ActiveRecord
 
     /**
      * @param $link_id
-     * @return static
+     * @return static|null
      */
     public static function findBannerOrCreate($link_id, $merchant_id)
     {
         $obj = static::findOne([
             'link_id' => $link_id,
             'affiliate_merchant_id' => $merchant_id
+        ]);
+        return $obj ? null : new static;
+    }
+
+    /**
+     * @param $id
+     * @return null|static
+     */
+    public static function findExperienceBannerOrCreate($id)
+    {
+        $obj = static::findOne([
+            'experience_id' => $id
         ]);
         return $obj ? null : new static;
     }

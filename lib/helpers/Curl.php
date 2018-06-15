@@ -9,6 +9,8 @@ namespace app\lib\helpers;
  */
 class Curl
 {
+    const AUTH_TYPE_BASIC = 'basic';
+
     /**
      * @var bool log all connection activity
      */
@@ -29,6 +31,11 @@ class Curl
      * @var string last error message
      */
     public $errorMsg;
+    /**
+     * @var $authType
+     * Header Authentication Type
+     */
+    public $authType;
     /**
      * @var array curl options
      */
@@ -77,6 +84,14 @@ class Curl
     public function setOptions(array $options)
     {
         $this->_curlOpts = array_replace($this->_curlOpts, $options);
+    }
+
+    /**
+     * @param $type
+     */
+    public function setAuthType($type)
+    {
+        $this->authType = $type;
     }
 
     /**
@@ -129,8 +144,18 @@ class Curl
     }
 
     /**
-     * @param string $url
+     * Return Auth Type
+     * @return mixed
+     */
+    public function getAuthType()
+    {
+        return $this->authType;
+    }
+
+    /**
+     * @param $url
      * @param array $params
+     * @param null $header
      * @return string
      */
     public function get($url, $params=[], $header = null)
@@ -163,10 +188,10 @@ class Curl
     }
 
     /**
-     * Call the url
-     * @param string $url
-     * @param array|null|string $data
+     * @param $url
+     * @param array $data
      * @param string $method
+     * @param null $header
      */
     public function executeCall($url, $data=[], $method='GET', $header = null)
     {
@@ -189,8 +214,12 @@ class Curl
                 CURLOPT_POSTFIELDS => false,
             ];
 
-            if ($header)
+            if (!empty($header) && $this->getAuthType() == self::AUTH_TYPE_BASIC)
+            {
+                $opts[CURLOPT_USERPWD] = $header;
+            } else {
                 $opts[CURLOPT_HTTPHEADER] = $header;
+            }
 
             // set url to our get
             $this->setOptions($opts);
