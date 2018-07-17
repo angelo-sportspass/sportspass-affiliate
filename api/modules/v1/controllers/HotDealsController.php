@@ -8,6 +8,8 @@ use app\api\modules\v1\models\Category;
 use app\api\modules\v1\models\Program;
 use app\api\modules\v1\models\BannerMedia;
 use app\api\modules\v1\models\Media;
+use app\api\modules\v1\models\RetailerBanners;
+use app\api\modules\v1\models\Retailer;
 use app\lib\helpers\FileHelper;
 use app\lib\api\Controller;
 use yii\base\Module;
@@ -16,7 +18,8 @@ use yii\helpers\Json;
 
 class HotDealsController extends Controller
 {
-    const EXPERIENCE_BASE_URL = 'https://www.experienceoz.com.au/en';
+    const EXPERIENCE_PROTOCOL = 'https://';
+    const EXPERIENCE_BASE_URL = 'experienceoz.com.au/en';
     /**
      * set Model Class if has Model
      *
@@ -44,6 +47,10 @@ class HotDealsController extends Controller
      */
     public $model;
 
+    /**
+     * @var $program
+     */
+    public $program;
 
     /**
      * HotDealsController constructor.
@@ -57,10 +64,10 @@ class HotDealsController extends Controller
 
         if (!$this->isAuthenticate) {
 
-            $program = Program::findOne(Program::SPORTSPASS);
+            $this->program = Program::findOne(Program::SPORTSPASS);
 
             $options = [
-                'api_url'  => $program['api_url'],
+                'api_url'  => $this->program['api_url'],
                 'username' => app()->params['experience_username'],
                 'password' => app()->params['experience_password']
             ];
@@ -99,7 +106,7 @@ class HotDealsController extends Controller
      */
     public function setUrl($canonicalSegment, $urlSegment)
     {
-        $this->url = self::EXPERIENCE_BASE_URL.'/'.$canonicalSegment.'/'.$urlSegment;
+        $this->url = self::EXPERIENCE_PROTOCOL.$this->program['api_url'].'/'.self::EXPERIENCE_BASE_URL.'/'.$canonicalSegment.'/'.$urlSegment;
     }
 
     /**
@@ -179,6 +186,14 @@ class HotDealsController extends Controller
                             $bc->category_id = Category::CATEGORY_EXPERIENCES;
 
                             $bc->save();
+
+
+                            $br = new RetailerBanners;
+                            $br->banner_id = $model->id;
+                            $br->retailer_id = Retailer::RETAILER_EXPERIENCE_OZ;
+
+                            $br->save();
+
                         }
                     }
                 }

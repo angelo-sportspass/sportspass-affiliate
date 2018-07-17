@@ -27,6 +27,8 @@ class Retailer extends ActiveRecord
     const RETAILER_TYPE_AFFILIATE = 'affiliate';
     const RETAILER_TYPE_DIRECT    = 'direct';
 
+    const RETAILER_EXPERIENCE_OZ = 7;
+
     const REQUEST_METHOD_PUT = 'PUT';
     /**
      * @inheritdoc
