@@ -106,7 +106,7 @@ class HotDealsController extends Controller
      */
     public function setUrl($canonicalSegment, $urlSegment)
     {
-        $this->url = self::EXPERIENCE_PROTOCOL.$this->program['api_url'].'/'.self::EXPERIENCE_BASE_URL.'/'.$canonicalSegment.'/'.$urlSegment;
+        $this->url = self::EXPERIENCE_PROTOCOL.$this->program['api_url'].'.'.self::EXPERIENCE_BASE_URL.'/'.$canonicalSegment.'/'.$urlSegment;
     }
 
     /**
@@ -143,6 +143,7 @@ class HotDealsController extends Controller
 
                     $model->configs = Json::encode($value);
                     $model->experience_id = $value['id'];
+                    $model->from_price = $value['fromPrice'];
 
                     $model->save();
 
@@ -193,7 +194,6 @@ class HotDealsController extends Controller
                             $br->retailer_id = Retailer::RETAILER_EXPERIENCE_OZ;
 
                             $br->save();
-
                         }
                     }
                 }
